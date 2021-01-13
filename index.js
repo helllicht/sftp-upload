@@ -9,9 +9,9 @@ const isSecurePassword = require('./isSecurePassword');
  * @param input
  */
 function debugHelper(input) {
-  if (!input.toString().startsWith('DEBUG')) {
-    core.info(input.toString())
-  }
+    if (!input.toString().startsWith('DEBUG')) {
+        core.info(input.toString());
+    }
 }
 
 /**
@@ -19,81 +19,81 @@ function debugHelper(input) {
  * @return {Promise<void>}
  */
 async function run() {
-  try {
-    const isRequired = { required: true };
+    try {
+        const isRequired = { required: true };
 
-    const host = core.getInput('host', isRequired);
-    const port = core.getInput('port', isRequired);
-    const username = core.getInput('username', isRequired);
-    const password = core.getInput('password', isRequired);
+        const host = core.getInput('host', isRequired);
+        const port = core.getInput('port', isRequired);
+        const username = core.getInput('username', isRequired);
+        const password = core.getInput('password', isRequired);
 
-    // check that password is secure (or throw error!)
-    isSecurePassword(password);
+        // check that password is secure (or throw error!)
+        isSecurePassword(password);
 
-    let localDirRaw = core.getInput('localDir', isRequired)
-    let uploadPathRaw = core.getInput('uploadPath', isRequired)
+        let localDirRaw = core.getInput('localDir', isRequired);
+        let uploadPathRaw = core.getInput('uploadPath', isRequired);
 
-    const localDir = prefixRepair(suffixRepair(localDirRaw));
-    const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
+        const localDir = prefixRepair(suffixRepair(localDirRaw));
+        const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
 
-    const config = {
-      host: host,
-      port: port,
-      username: username,
-      password: password,
-      // - - -
-      debug: debugHelper,
-      retries: 3,
-      retry_factor: 2,
-      retry_minTimeout: 2000,
-    };
+        const config = {
+            host: host,
+            port: port,
+            username: username,
+            password: password,
+            // - - -
+            debug: debugHelper,
+            retries: 3,
+            retry_factor: 2,
+            retry_minTimeout: 2000,
+        };
 
-    let sftp = new client('upload-client');
+        let sftp = new client('upload-client');
 
-    sftp.connect(config)
-        .then(() => {
-          return sftp.cwd();
-        })
-        .then(base => {
-          core.info(`Remote base directory is ${base}`);
-        })
-        .then(async () => {
-          await createInfo(localDir);
+        sftp.connect(config)
+            .then(() => {
+                return sftp.cwd();
+            })
+            .then(base => {
+                core.info(`Remote base directory is ${base}`);
+            })
+            .then(async () => {
+                await createInfo(localDir);
 
-          if (await sftp.exists(uploadPath + 'upload')) {
-            core.info('An old "upload" folder was found! The script tries to remove it!');
-            await sftp.rmdir(uploadPath + 'upload', true);
-          }
+                if (await sftp.exists(uploadPath + 'upload')) {
+                    core.info('An old "upload" folder was found! The script tries to remove it!');
+                    await sftp.rmdir(uploadPath + 'upload', true);
+                }
 
-          core.info('Start upload.');
-          await sftp.uploadDir(localDir, uploadPath + 'upload');
+                core.info('Start upload.');
+                await sftp.uploadDir(localDir, uploadPath + 'upload');
 
-          // if NOT exist create folder
-          if (!await sftp.exists(uploadPath + 'active')) {
-            core.info('No "active" folder found (first time running this script?). The script tries to create it!');
-            await sftp.mkdir(uploadPath + 'active', true);
-          }
+                // if NOT exist create folder
+                if (!await sftp.exists(uploadPath + 'active')) {
+                    core.info('No "active" folder found (first time running this script?). The script tries to create it!');
+                    await sftp.mkdir(uploadPath + 'active', true);
+                }
 
-          // if exist remove old backup
-          if (await sftp.exists(uploadPath + 'backup')) {
-            core.info('Remove old backup, to save current "active" as "backup" afterwards.');
-            await sftp.rmdir(uploadPath + 'backup', true);
-          }
+                // if exist remove old backup
+                if (await sftp.exists(uploadPath + 'backup')) {
+                    core.info('Remove old backup, to save current "active" as "backup" afterwards.');
+                    await sftp.rmdir(uploadPath + 'backup', true);
+                }
 
-          core.info('Rename directories "active" => "backup"');
-          await sftp.rename('active', 'backup')
-          core.info('Rename directories "upload" => "active"');
-          await sftp.rename('upload', 'active');
-        })
-        .catch(err => {
-          core.setFailed(err.message)
-        })
-        .finally(() => {
-          sftp.end();
-        });
-  } catch (error) {
-    core.setFailed(error.message);
-  }
+                core.info('Rename directories "active" => "backup"');
+                await sftp.rename('active', 'backup');
+                core.info('Rename directories "upload" => "active"');
+                await sftp.rename('upload', 'active');
+            })
+            .catch(err => {
+                core.setFailed(err.message);
+            })
+            .finally(() => {
+                sftp.end();
+            });
+    } catch (error) {
+        core.setFailed(error.message);
+    }
 }
 
 run();

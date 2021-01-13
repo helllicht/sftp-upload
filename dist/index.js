@@ -8,12 +8,11 @@ require('./sourcemap-register.js');module.exports =
 const fs = __webpack_require__(5747);
 
 /**
- * @param {String} localDir
+ * @param {string} localDir
  * @return {Promise<void>}
  */
 let createInfo = function (localDir) {
     return new Promise((resolve, reject) => {
-
         const now = new Date();
         const date = new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeStyle: 'long' }).format(now);
 
@@ -45,14 +44,15 @@ const client = __webpack_require__(7551);
 const createInfo = __webpack_require__(1123);
 const prefixRepair = __webpack_require__(4262);
 const suffixRepair = __webpack_require__(225);
+const isSecurePassword = __webpack_require__(7043);
 
 /**
  * @param input
  */
 function debugHelper(input) {
-  if (!input.toString().startsWith('DEBUG')) {
-    core.info(input.toString())
-  }
+    if (!input.toString().startsWith('DEBUG')) {
+        core.info(input.toString());
+    }
 }
 
 /**
@@ -60,81 +60,117 @@ function debugHelper(input) {
  * @return {Promise<void>}
  */
 async function run() {
-  try {
-    const isRequired = { required: true };
+    try {
+        const isRequired = { required: true };
 
-    const host = core.getInput('host', isRequired);
-    const port = core.getInput('port', isRequired);
-    const username = core.getInput('username', isRequired);
-    const password = core.getInput('password', isRequired);
+        const host = core.getInput('host', isRequired);
+        const port = core.getInput('port', isRequired);
+        const username = core.getInput('username', isRequired);
+        const password = core.getInput('password', isRequired);
 
-    let localDirRaw = core.getInput('localDir', isRequired)
-    let uploadPathRaw = core.getInput('uploadPath', isRequired)
+        // check that password is secure (or throw error!)
+        isSecurePassword(password);
 
-    const localDir = await prefixRepair(await suffixRepair(localDirRaw));
-    const uploadPath = await prefixRepair(await suffixRepair(uploadPathRaw));
+        let localDirRaw = core.getInput('localDir', isRequired);
+        let uploadPathRaw = core.getInput('uploadPath', isRequired);
 
-    const config = {
-      host: host,
-      port: port,
-      username: username,
-      password: password,
-      // - - -
-      debug: debugHelper,
-      retries: 3,
-      retry_factor: 2,
-      retry_minTimeout: 2000,
-    };
+        const localDir = prefixRepair(suffixRepair(localDirRaw));
+        const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
 
-    let sftp = new client('upload-client');
+        const config = {
+            host: host,
+            port: port,
+            username: username,
+            password: password,
+            // - - -
+            debug: debugHelper,
+            retries: 3,
+            retry_factor: 2,
+            retry_minTimeout: 2000,
+        };
 
-    sftp.connect(config)
-        .then(() => {
-          return sftp.cwd();
-        })
-        .then(base => {
-          core.info(`Remote base directory is ${base}`);
-        })
-        .then(async () => {
-          await createInfo(localDir);
+        let sftp = new client('upload-client');
 
-          if (await sftp.exists(uploadPath + 'upload')) {
-            core.info('An old "upload" folder was found! The script tries to remove it!');
-            await sftp.rmdir(uploadPath + 'upload', true);
-          }
+        sftp.connect(config)
+            .then(() => {
+                return sftp.cwd();
+            })
+            .then(base => {
+                core.info(`Remote base directory is ${base}`);
+            })
+            .then(async () => {
+                await createInfo(localDir);
 
-          core.info('Start upload.');
-          await sftp.uploadDir(localDir, uploadPath + 'upload');
+                if (await sftp.exists(uploadPath + 'upload')) {
+                    core.info('An old "upload" folder was found! The script tries to remove it!');
+                    await sftp.rmdir(uploadPath + 'upload', true);
+                }
 
-          // if NOT exist create folder
-          if (!await sftp.exists(uploadPath + 'active')) {
-            core.info('No "active" folder found (first time running this script?). The script tries to create it!');
-            await sftp.mkdir(uploadPath + 'active', true);
-          }
+                core.info('Start upload.');
+                await sftp.uploadDir(localDir, uploadPath + 'upload');
 
-          // if exist remove old backup
-          if (await sftp.exists(uploadPath + 'backup')) {
-            core.info('Remove old backup, to save current "active" as "backup" afterwards.');
-            await sftp.rmdir(uploadPath + 'backup', true);
-          }
+                // if NOT exist create folder
+                if (!await sftp.exists(uploadPath + 'active')) {
+                    core.info('No "active" folder found (first time running this script?). The script tries to create it!');
+                    await sftp.mkdir(uploadPath + 'active', true);
+                }
 
-          core.info('Rename directories "active" => "backup"');
-          await sftp.rename('active', 'backup')
-          core.info('Rename directories "upload" => "active"');
-          await sftp.rename('upload', 'active');
-        })
-        .catch(err => {
-          core.setFailed(err.message)
-        })
-        .finally(() => {
-          sftp.end();
-        });
-  } catch (error) {
-    core.setFailed(error.message);
-  }
+                // if exist remove old backup
+                if (await sftp.exists(uploadPath + 'backup')) {
+                    core.info('Remove old backup, to save current "active" as "backup" afterwards.');
+                    await sftp.rmdir(uploadPath + 'backup', true);
+                }
+
+                core.info('Rename directories "active" => "backup"');
+                await sftp.rename('active', 'backup');
+                core.info('Rename directories "upload" => "active"');
+                await sftp.rename('upload', 'active');
+            })
+            .catch(err => {
+                core.setFailed(err.message);
+            })
+            .finally(() => {
+                sftp.end();
+            });
+    } catch (error) {
+        core.setFailed(error.message);
+    }
 }
 
 run();
+
+
+/***/ }),
+
+/***/ 7043:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+const core = __webpack_require__(2186);
+
+/**
+ * @param {string} password
+ * @return {boolean}
+ */
+let isSecurePassword = function (password) {
+    if (typeof password !== 'string') {
+        core.setFailed('Password is not type string!');
+        throw new Error('Error from passwordCheck.js - password is not type string!');
+    }
+
+    if (password.length < 8) {
+        // it is checked in regex anyway, but for a probably better error message it is prechecked :)
+        core.setFailed('Password is to short "password.length < 8"!');
+        throw new Error('Error from passwordCheck.js - password is to short "password.length < 8"!');
+    }
+
+    const strongRegex = new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})');
+    if (!password.match(strongRegex)) {
+        core.setFailed('Password is not complex enough!');
+        throw new Error('Error from passwordCheck.js - password is not complex enough! (1 lowercase, 1 uppercase, 1 numeric, 1 special character [!@#$%^&*])');
+    }
+};
+
+module.exports = isSecurePassword;
 
 
 /***/ }),
@@ -26936,46 +26972,45 @@ module.exports = __webpack_require__(1669).deprecate;
 const core = __webpack_require__(2186);
 
 /**
- * @param {String} path
- * @return {Promise<string>}
+ * @param {string} path
+ * @return {string|null}
  */
 let prefixRepair = function (path) {
-    return new Promise((resolve, reject) => {
-        if (typeof path !== 'string') {
-            core.setFailed('Error from prefixRepair.js - path is not type string - given: ' + path + ' ,typeof: ' + typeof path)
-            return reject();
-        }
+    if (typeof path !== 'string') {
+        core.setFailed('path is not type string!');
+        throw new Error('Error from prefixRepair.js - path is not type string - given: ');
+    }
 
-        if (path.length === 0) {
-            core.setFailed('Error from prefixRepair.js - path.length is zero!')
-            return reject();
-        }
+    if (path.length === 0) {
+        core.setFailed('path.length is zero!');
+        throw new Error('Error from prefixRepair.js - path.length is zero!');
+    }
 
-        if (path.includes('..')) {
-            core.setFailed('Error from prefixRepair.js - path should not contain ".."!')
-            return reject();
-        }
+    if (path.includes('..')) {
+        core.setFailed(' path should not contain ".."!');
+        throw new Error('Error from prefixRepair.js - path should not contain ".."!');
+    }
 
-        if (path.startsWith('./')) {
-            // './example'
-            return resolve(path);
-        }
+    if (path.startsWith('./')) {
+        // './example'
+        return path;
+    }
 
-        if (path.startsWith('/')) {
-            // '/example'
-            core.warning('prefixRepair.js - it is not allowed to start path with "/" - script prefixed it with "."')
-            return resolve('.' + path);
-        }
+    if (path.startsWith('/')) {
+        // '/example'
+        core.info('prefixRepair.js - it is not allowed to start path with "/" - script prefixed it with "."');
 
-        if (path.startsWith('.')) {
-            // '.example'
-            core.warning('prefixRepair.js - it is not allowed to start path with "." - script prefixed path with "./"')
+        return ('.' + path);
+    }
 
-            return resolve('./' + path.slice(1, 99));
-        }
+    if (path.startsWith('.')) {
+        // '.example'
+        core.info('prefixRepair.js - it is not allowed to start path with "." - script prefixed path with "./"');
 
-        return resolve('./' + path);
-    });
+        return ('./' + path.slice(1, 99));
+    }
+
+    return ('./' + path);
 };
 
 module.exports = prefixRepair;
@@ -26989,33 +27024,31 @@ module.exports = prefixRepair;
 const core = __webpack_require__(2186);
 
 /**
- * @param {String} path
- * @return {Promise<string>}
+ * @param {string} path
+ * @return {string|null}
  */
 let suffixRepair = function (path) {
-    return new Promise((resolve, reject) => {
-        if (typeof path !== 'string') {
-            core.setFailed('Error from suffixRepair.js - path is not type string - given: ' + path + ' ,typeof: ' + typeof path)
-            return reject();
-        }
+    if (typeof path !== 'string') {
+        core.setFailed('path is not type string!');
+        throw new Error('Error from suffixRepair.js - path is not type string - given: ');
+    }
 
-        if (path.length === 0) {
-            core.setFailed('Error from suffixRepair.js - path.length is zero!')
-            return reject();
-        }
+    if (path.length === 0) {
+        core.setFailed('path.length is zero!');
+        throw new Error('Error from suffixRepair.js - path.length is zero!');
+    }
 
-        if (path.includes('..')) {
-            core.setFailed('Error from suffixRepair.js - path should not contain ".."!')
-            return reject();
-        }
+    if (path.includes('..')) {
+        core.setFailed(' path should not contain ".."!');
+        throw new Error('Error from suffixRepair.js - path should not contain ".."!');
+    }
 
-        if (path.endsWith('/')) {
-            // 'example/'
-            return resolve(path);
-        }
+    if (path.endsWith('/')) {
+        // 'example/'
+        return path;
+    }
 
-        return resolve(path + '/');
-    });
+    return (path + '/');
 };
 
 module.exports = suffixRepair;

@@ -2,27 +2,31 @@ name: 'Dome-SFTP-Test-Action'
 description: 'If default is given, variable is optional!'
 
 inputs:
-  host:
-    description: 'Host (e.g. "my-sftp-url.com")'
-    required: true
-  port:
-    description: 'Port [default: "22"]'
-    required: false
-    default: '22'
-  username:
-    description: 'Username'
-    required: true
-  password:
-    description: 'Password'
-    required: true
-  localDir:
-    description: 'Directory that should be uploaded (e.g. "dist", "./app", "./compiled/")'
-    required: true
-  uploadPath:
-    description: 'Path where the working directories are [default: "./"] (e.g. "app", "./www/", "www/prod", "html/var/"'
-    required: false
-    default: './'
+    host:
+        description: 'Host (e.g. "my-sftp-url.com")'
+        required: true
+    port:
+        description: 'Port [default: "22"]'
+        required: false
+        default: '22'
+    username:
+        description: 'Username'
+        required: true
+    password:
+        description: 'Password'
+        required: true
+    localDir:
+        description: 'Directory that should be uploaded (e.g. "dist", "./app", "./compiled/")'
+        required: true
+    uploadPath:
+        description: 'Path where the working directories are [default: "./"] (e.g. "app", "./www/", "www/prod", "html/var/"'
+        required: false
+        default: './'
+    debugMode:
+        description: 'Enable debug ("on"/"off") to receive a detailed log of the upload [default: "off"]'
+        required: false
+        default: 'off'
 
 runs:
-  using: 'node12'
-  main: 'dist/index.js'
+    using: 'node12'
+    main: 'dist/index.js'
