@@ -6,6 +6,11 @@ const core = require('@actions/core');
  */
 let prefixRepair = function (path) {
     return new Promise((resolve, reject) => {
+        if (typeof path !== 'string') {
+            core.setFailed('Error from prefixRepair.js - path is not type string - given: ' + path + ' ,typeof: ' + typeof path)
+            return reject();
+        }
+
         if (path.length === 0) {
             core.setFailed('Error from prefixRepair.js - path.length is zero!')
             return reject();

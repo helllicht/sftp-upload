@@ -19,13 +19,18 @@ function debugHelper(input) {
  */
 async function run() {
   try {
-    const host = core.getInput('host');
-    const port = core.getInput('port');
-    const username = core.getInput('username');
-    const password = core.getInput('password');
+    const isRequired = { required: true };
 
-    const localDir = prefixRepair(suffixRepair(core.getInput('localDir')));
-    const uploadPath = prefixRepair(suffixRepair(core.getInput('uploadPath')));
+    const host = core.getInput('host', isRequired);
+    const port = core.getInput('port', isRequired);
+    const username = core.getInput('username', isRequired);
+    const password = core.getInput('password', isRequired);
+
+    let localDirRaw = core.getInput('localDir', isRequired)
+    let uploadPathRaw = core.getInput('uploadPath', isRequired)
+
+    const localDir = prefixRepair(suffixRepair(localDirRaw));
+    const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
 
     const config = {
       host: host,

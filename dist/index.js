@@ -57,13 +57,18 @@ function debugHelper(input) {
  */
 async function run() {
   try {
-    const host = core.getInput('host');
-    const port = core.getInput('port');
-    const username = core.getInput('username');
-    const password = core.getInput('password');
+    const isRequired = { required: true };
 
-    const localDir = prefixRepair(suffixRepair(core.getInput('localDir')));
-    const uploadPath = prefixRepair(suffixRepair(core.getInput('uploadPath')));
+    const host = core.getInput('host', isRequired);
+    const port = core.getInput('port', isRequired);
+    const username = core.getInput('username', isRequired);
+    const password = core.getInput('password', isRequired);
+
+    let localDirRaw = core.getInput('localDir', isRequired)
+    let uploadPathRaw = core.getInput('uploadPath', isRequired)
+
+    const localDir = prefixRepair(suffixRepair(localDirRaw));
+    const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
 
     const config = {
       host: host,
@@ -26932,6 +26937,11 @@ const core = __webpack_require__(2186);
  */
 let prefixRepair = function (path) {
     return new Promise((resolve, reject) => {
+        if (typeof path !== 'string') {
+            core.setFailed('Error from prefixRepair.js - path is not type string - given: ' + path + ' ,typeof: ' + typeof path)
+            return reject();
+        }
+
         if (path.length === 0) {
             core.setFailed('Error from prefixRepair.js - path.length is zero!')
             return reject();
@@ -26987,6 +26997,11 @@ const core = __webpack_require__(2186);
  */
 let suffixRepair = function (path) {
     return new Promise((resolve, reject) => {
+        if (typeof path !== 'string') {
+            core.setFailed('Error from suffixRepair.js - path is not type string - given: ' + path + ' ,typeof: ' + typeof path)
+            return reject();
+        }
+
         if (path.length === 0) {
             core.setFailed('Error from suffixRepair.js - path.length is zero!')
             return reject();
