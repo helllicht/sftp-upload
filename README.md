@@ -2,6 +2,10 @@
 
 > https://github.com/actions/javascript-action
 
+## Active versions
++ master
++ v1
+
 ## How to use this action
 If not already done, add following folder structure to the project (name of the yml-file is up to you).
 ```
@@ -47,7 +51,8 @@ jobs:
 ```
 
 
-## Update an active version
+## Update an active version 
+Breaking changes are not allowed when updating an active version!
 1) checkout the branch (e.g. v1)
 2) ...change code
 3) `npm run test` (fix or write tests)
@@ -55,6 +60,7 @@ jobs:
 5) commit & push (with dist folder!)
 
 ## Release new version
+Make release note with a short overview.
 1) create a new branch (e.g. v3)
 2) ...change code
 3) `npm run test` (fix or write tests)
