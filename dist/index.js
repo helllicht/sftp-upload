@@ -5,6 +5,7 @@ require('./sourcemap-register.js');module.exports =
 /***/ 1123:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+const core = __webpack_require__(2186);
 const fs = __webpack_require__(5747);
 
 /**
@@ -13,6 +14,11 @@ const fs = __webpack_require__(5747);
  */
 let createInfo = function (localDir) {
     return new Promise((resolve, reject) => {
+        if (typeof localDir !== 'string') {
+            core.setFailed('localDir is not type string!');
+            throw new Error('Error from createInfo.js - localDir is not type string!');
+        }
+
         const now = new Date();
         const date = new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeStyle: 'long' }).format(now);
 
@@ -166,7 +172,7 @@ let isSecurePassword = function (password) {
         throw new Error('Error from passwordCheck.js - password is to short "password.length < 8"!');
     }
 
-    const strongRegex = new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})');
+    const strongRegex = new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!-_@#$%^&*])(?=.{8,})');
     if (!password.match(strongRegex)) {
         core.setFailed('Password is not complex enough!');
         throw new Error('Error from passwordCheck.js - password is not complex enough! (1 lowercase, 1 uppercase, 1 numeric, 1 special character [!@#$%^&*])');
@@ -26981,7 +26987,7 @@ const core = __webpack_require__(2186);
 let prefixRepair = function (path) {
     if (typeof path !== 'string') {
         core.setFailed('path is not type string!');
-        throw new Error('Error from prefixRepair.js - path is not type string - given: ');
+        throw new Error('Error from prefixRepair.js - path is not type string!');
     }
 
     if (path.length === 0) {
@@ -26990,7 +26996,7 @@ let prefixRepair = function (path) {
     }
 
     if (path.includes('..')) {
-        core.setFailed(' path should not contain ".."!');
+        core.setFailed('path should not contain ".."!');
         throw new Error('Error from prefixRepair.js - path should not contain ".."!');
     }
 
@@ -27042,7 +27048,7 @@ let suffixRepair = function (path) {
     }
 
     if (path.includes('..')) {
-        core.setFailed(' path should not contain ".."!');
+        core.setFailed('path should not contain ".."!');
         throw new Error('Error from suffixRepair.js - path should not contain ".."!');
     }
 
