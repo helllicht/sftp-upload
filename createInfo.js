@@ -6,11 +6,15 @@ const fs = require('fs');
  */
 let createInfo = function (localDir) {
     return new Promise((resolve, reject) => {
+
         const now = new Date();
+        const date = new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeStyle: 'long' }).format(now);
+
         const jsonBody = {
-            deployedAt: `${now.getFullYear()}-${now.getMonth()}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`
+            deployedAt: date,
         };
-        fs.writeFile (localDir + 'info.json', JSON.stringify(jsonBody), function(err) {
+
+        fs.writeFile(localDir + 'info.json', JSON.stringify(jsonBody), function (err) {
                 if (err) {
                     console.error('Could not create info.json in ' + localDir);
                     return reject();
