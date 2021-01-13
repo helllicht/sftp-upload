@@ -1,0 +1,90 @@
+const core = require('@actions/core');
+const client = require('ssh2-sftp-client');
+const createInfo = require('./createInfo');
+const prefixRepair = require('./prefixRepair');
+const suffixRepair = require('./suffixRepair');
+
+/**
+ * @param input
+ */
+function debugHelper(input) {
+  if (!input.toString().startsWith('DEBUG')) {
+    core.info(input.toString())
+  }
+}
+
+/**
+ * The main function of the github action!
+ * @return {Promise<void>}
+ */
+async function run() {
+  try {
+    const host = core.getInput('host');
+    const port = core.getInput('port');
+    const username = core.getInput('username');
+    const password = core.getInput('password');
+
+    const localDir = prefixRepair(suffixRepair(core.getInput('localDir')));
+    const uploadPath = prefixRepair(suffixRepair(core.getInput('uploadPath')));
+
+    const config = {
+      host: host,
+      port: port,
+      username: username,
+      password: password,
+      // - - -
+      debug: debugHelper,
+      retries: 3,
+      retry_factor: 2,
+      retry_minTimeout: 2000,
+    };
+
+    let sftp = new client('upload-client');
+
+    sftp.connect(config)
+        .then(() => {
+          return sftp.cwd();
+        })
+        .then(base => {
+          core.info(`Remote base directory is ${base}`);
+        })
+        .then(async () => {
+          await createInfo(localDir);
+
+          if (await sftp.exists(uploadPath + 'upload')) {
+            core.info('An old "upload" folder was found! The script tries to remove it!');
+            await sftp.rmdir(uploadPath + 'upload', true);
+          }
+
+          core.info('Start upload.');
+          await sftp.uploadDir(localDir, uploadPath + 'upload');
+
+          // if NOT exist create folder
+          if (!await sftp.exists(uploadPath + 'active')) {
+            core.info('No "active" folder found (first time running this script?). The script tries to create it!');
+            await sftp.mkdir(uploadPath + 'active', true);
+          }
+
+          // if exist remove old backup
+          if (await sftp.exists(uploadPath + 'backup')) {
+            core.info('Remove old backup, to save current "active" as "backup" afterwards.');
+            await sftp.rmdir(uploadPath + 'backup', true);
+          }
+
+          core.info('Rename directories "active" => "backup"');
+          await sftp.rename('active', 'backup')
+          core.info('Rename directories "upload" => "active"');
+          await sftp.rename('upload', 'active');
+        })
+        .catch(err => {
+          core.setFailed(err.message)
+        })
+        .finally(() => {
+          sftp.end();
+        });
+  } catch (error) {
+    core.setFailed(error.message);
+  }
+}
+
+run();

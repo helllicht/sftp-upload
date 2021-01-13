@@ -1,0 +1,23 @@
+{
+  "name": "sftp-upload",
+  "version": "1.0.0",
+  "description": "helllicht/sftp-upload",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "prepare": "ncc build index.js -o dist --source-map --license licenses.txt",
+    "test": "jest",
+    "all": "npm run lint && npm run prepare"
+  },
+  "author": "helllicht",
+  "license": "NONE",
+  "dependencies": {
+    "@actions/core": "^1.2.5",
+    "ssh2-sftp-client": "^6.0.1"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.25.1",
+    "eslint": "^7.4.0",
+    "jest": "^26.1.0"
+  }
+}
