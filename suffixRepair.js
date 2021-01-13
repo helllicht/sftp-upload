@@ -16,7 +16,7 @@ let suffixRepair = function (path) {
     }
 
     if (path.includes('..')) {
-        core.setFailed(' path should not contain ".."!');
+        core.setFailed('path should not contain ".."!');
         throw new Error('Error from suffixRepair.js - path should not contain ".."!');
     }
 

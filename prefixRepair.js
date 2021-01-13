@@ -7,7 +7,7 @@ const core = require('@actions/core');
 let prefixRepair = function (path) {
     if (typeof path !== 'string') {
         core.setFailed('path is not type string!');
-        throw new Error('Error from prefixRepair.js - path is not type string - given: ');
+        throw new Error('Error from prefixRepair.js - path is not type string!');
     }
 
     if (path.length === 0) {
@@ -16,7 +16,7 @@ let prefixRepair = function (path) {
     }
 
     if (path.includes('..')) {
-        core.setFailed(' path should not contain ".."!');
+        core.setFailed('path should not contain ".."!');
         throw new Error('Error from prefixRepair.js - path should not contain ".."!');
     }
 
