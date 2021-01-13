@@ -83,11 +83,14 @@ async function run() {
             username: username,
             password: password,
             // - - -
-            debug: debugHelper,
             retries: 3,
             retry_factor: 2,
             retry_minTimeout: 2000,
         };
+
+        if (core.getInput('debugMode') === 'on') {
+            config['debug'] = debugHelper;
+        }
 
         let sftp = new client('upload-client');
 
