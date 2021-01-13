@@ -26958,7 +26958,7 @@ let prefixRepair = function (path) {
         }
 
         const regexOnlyLetter = /^[A-Za-z]+$/;
-        if (path[0].value.match(regexOnlyLetter)) {
+        if (path.charAt(0).value.match(regexOnlyLetter)) {
             // 'example'
             return resolve('./' + path);
         }
