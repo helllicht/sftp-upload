@@ -50,14 +50,16 @@ jobs:
 ## Update an active version
 1) checkout the branch (e.g. v1)
 2) ...change code
-3) `npm run prepare`
-4) commit & push (with dist folder!)
+3) `npm run test` (fix or write tests)
+4) `npm run prepare`
+5) commit & push (with dist folder!)
 
 ## Release new version
 1) create a new branch (e.g. v3)
 2) ...change code
-3) `npm run prepare`
-4) commit & push (with dist folder!)
+3) `npm run test` (fix or write tests)
+4) `npm run prepare`
+5) commit & push (with dist folder!)
 
 ## Workflow
 #### Folders at start and after finish:

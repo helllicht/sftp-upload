@@ -16,7 +16,7 @@ let isSecurePassword = function (password) {
         throw new Error('Error from passwordCheck.js - password is to short "password.length < 8"!');
     }
 
-    const strongRegex = new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})');
+    const strongRegex = new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!-_@#$%^&*])(?=.{8,})');
     if (!password.match(strongRegex)) {
         core.setFailed('Password is not complex enough!');
         throw new Error('Error from passwordCheck.js - password is not complex enough! (1 lowercase, 1 uppercase, 1 numeric, 1 special character [!@#$%^&*])');
