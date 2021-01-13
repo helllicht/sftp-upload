@@ -29,8 +29,8 @@ async function run() {
     let localDirRaw = core.getInput('localDir', isRequired)
     let uploadPathRaw = core.getInput('uploadPath', isRequired)
 
-    const localDir = prefixRepair(suffixRepair(localDirRaw));
-    const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
+    const localDir = await prefixRepair(await suffixRepair(localDirRaw));
+    const uploadPath = await prefixRepair(await suffixRepair(uploadPathRaw));
 
     const config = {
       host: host,
