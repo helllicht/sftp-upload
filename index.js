@@ -3,6 +3,7 @@ const client = require('ssh2-sftp-client');
 const createInfo = require('./createInfo');
 const prefixRepair = require('./prefixRepair');
 const suffixRepair = require('./suffixRepair');
+const isSecurePassword = require('./isSecurePassword');
 
 /**
  * @param input
@@ -26,11 +27,14 @@ async function run() {
     const username = core.getInput('username', isRequired);
     const password = core.getInput('password', isRequired);
 
+    // check that password is secure (or throw error!)
+    isSecurePassword(password);
+
     let localDirRaw = core.getInput('localDir', isRequired)
     let uploadPathRaw = core.getInput('uploadPath', isRequired)
 
-    const localDir = await prefixRepair(await suffixRepair(localDirRaw));
-    const uploadPath = await prefixRepair(await suffixRepair(uploadPathRaw));
+    const localDir = prefixRepair(suffixRepair(localDirRaw));
+    const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
 
     const config = {
       host: host,

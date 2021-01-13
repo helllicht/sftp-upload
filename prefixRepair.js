@@ -2,45 +2,43 @@ const core = require('@actions/core');
 
 /**
  * @param {String} path
- * @return {Promise<string>}
+ * @return {string|null}
  */
 let prefixRepair = function (path) {
-    return new Promise((resolve, reject) => {
-        if (typeof path !== 'string') {
-            core.setFailed('Error from prefixRepair.js - path is not type string - given: ' + path + ' ,typeof: ' + typeof path)
-            return reject();
-        }
+    if (typeof path !== 'string') {
+        core.setFailed('Error from prefixRepair.js - path is not type string - given: ' + path + ' ,typeof: ' + typeof path);
+        return null;
+    }
 
-        if (path.length === 0) {
-            core.setFailed('Error from prefixRepair.js - path.length is zero!')
-            return reject();
-        }
+    if (path.length === 0) {
+        core.setFailed('Error from prefixRepair.js - path.length is zero!');
+        return null;
+    }
 
-        if (path.includes('..')) {
-            core.setFailed('Error from prefixRepair.js - path should not contain ".."!')
-            return reject();
-        }
+    if (path.includes('..')) {
+        core.setFailed('Error from prefixRepair.js - path should not contain ".."!');
+        return null;
+    }
 
-        if (path.startsWith('./')) {
-            // './example'
-            return resolve(path);
-        }
+    if (path.startsWith('./')) {
+        // './example'
+        return path;
+    }
 
-        if (path.startsWith('/')) {
-            // '/example'
-            core.warning('prefixRepair.js - it is not allowed to start path with "/" - script prefixed it with "."')
-            return resolve('.' + path);
-        }
+    if (path.startsWith('/')) {
+        // '/example'
+        core.warning('prefixRepair.js - it is not allowed to start path with "/" - script prefixed it with "."');
+        return ('.' + path);
+    }
 
-        if (path.startsWith('.')) {
-            // '.example'
-            core.warning('prefixRepair.js - it is not allowed to start path with "." - script prefixed path with "./"')
+    if (path.startsWith('.')) {
+        // '.example'
+        core.warning('prefixRepair.js - it is not allowed to start path with "." - script prefixed path with "./"');
 
-            return resolve('./' + path.slice(1, 99));
-        }
+        return ('./' + path.slice(1, 99));
+    }
 
-        return resolve('./' + path);
-    });
+    return ('./' + path);
 };
 
 module.exports = prefixRepair;
