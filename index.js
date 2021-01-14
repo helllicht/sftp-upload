@@ -1,5 +1,6 @@
 const core = require('@actions/core');
 const client = require('ssh2-sftp-client');
+const checkNodeVersion = require('./checkNodeVersion');
 const createInfo = require('./createInfo');
 const prefixRepair = require('./prefixRepair');
 const suffixRepair = require('./suffixRepair');
@@ -20,6 +21,9 @@ function debugHelper(input) {
  */
 async function run() {
     try {
+        // node 14 is not supported due to a bug!
+        checkNodeVersion();
+
         const isRequired = { required: true };
 
         const host = core.getInput('host', isRequired);
@@ -83,10 +87,15 @@ async function run() {
                     await sftp.rmdir(uploadPath + 'backup', true);
                 }
 
-                core.info('Rename directories "active" => "backup"');
+                const start = Math.floor(new Date().getTime() / 1000);
+                core.info('Rename directory "active" => "backup"');
                 await sftp.rename('active', 'backup');
-                core.info('Rename directories "upload" => "active"');
+
+                core.info('Rename directory "upload" => "active"');
                 await sftp.rename('upload', 'active');
+                const done = Math.floor(new Date().getTime() / 1000);
+
+                core.info('DONE - Folder swap took ' + (done - start) + ' seconds!');
             })
             .catch(err => {
                 core.setFailed(err.message);
