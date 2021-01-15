@@ -1,5 +1,5 @@
-name: 'Dome-SFTP-Test-Action'
-description: 'If default is given, variable is optional!'
+name: 'helllicht/sftp-upload'
+description: 'helllicht internal sftp-upload-action'
 
 inputs:
     host:
