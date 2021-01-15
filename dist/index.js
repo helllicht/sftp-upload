@@ -200,21 +200,29 @@ async function run() {
                     await sftp.mkdir(uploadPath + 'active', true);
                 }
 
-                // if exist remove old backup
+                // rename (old) backup dir
                 if (await sftp.exists(uploadPath + 'backup')) {
-                    core.info('Remove old backup, to save current "active" as "backup" afterwards.');
-                    await sftp.rmdir(uploadPath + 'backup', true);
+                    core.info('Rename directory "backup" => "backup-remove"');
+                    await sftp.rename(uploadPath + 'backup', uploadPath + 'backup-remove');
                 }
 
+                // rename active dir
                 const start = Math.floor(new Date().getTime() / 1000);
                 core.info('Rename directory "active" => "backup"');
                 await sftp.rename(uploadPath + 'active', uploadPath + 'backup');
 
+                // rename upload dir
                 core.info('Rename directory "upload" => "active"');
                 await sftp.rename(uploadPath + 'upload', uploadPath + 'active');
                 const done = Math.floor(new Date().getTime() / 1000);
 
-                core.info('DONE - Folder swap took ' + (done - start) + ' seconds!');
+                core.info('### Deployment is done - Folder swap took ' + (done - start) + ' seconds! ###');
+
+                // remove backup-remove
+                core.info('Auto-cleanup - backup-remove is now gonna be removed from server.')
+                await sftp.rmdir(uploadPath + 'backup-remove', true);
+
+                core.info('### DONE ###')
             })
             .catch(err => {
                 core.setFailed(err.message);

@@ -84,16 +84,20 @@ Make release note with a short overview.
 .
 ├── active
 ├── backup
-└── upload <- just exists while uploading
+├── backup-remove
+└── upload
 ```
 
 1. upload '{localDir}' to '{uploadPath}/upload'
-2. remove '{uploadPath}/backup'
+2. rename '{uploadPath}/backup' to '{uploadPath}/backup-remove'
 3. rename '{uploadPath}/active' to '{uploadPath}/backup'
 4. rename '{uploadPath}/upload' to '{uploadPath}/active'
+5. remove '{uploadPath}/backup-remove'
 
 In the short time between step 3 and 4, the content is briefly inaccessible. Unfortunately, this is due to the fact that
 SFTP and FTPS cannot create symlinks!
+The reason why rename strategy is used, because it is much faster to rename a folder, than to delete it.
+So first upload and rename the folders, then remove them to deploy as fast as possible.
 
 The action will create a file '{localDir}/info.json' with the timestamp of the deployment!
 
