@@ -1,4 +1,5 @@
 const core = require('@actions/core');
+const regexpEscape = require('lodash.escaperegexp')
 
 /**
  * @param {string[]} exclude
@@ -6,6 +7,7 @@ const core = require('@actions/core');
  */
 let buildFilter = function (exclude) {
     if (exclude.length === 0) {
+        core.info('exclude.length is zero, no upload filter is applied!');
         return new RegExp('.*');
     }
 
@@ -16,7 +18,7 @@ let buildFilter = function (exclude) {
             throw new Error('Error from buildFilter.js - Wrong exclude format!');
         }
 
-        regex = regex + '^(?!' + item + ')'
+        regex = regex + '^(?!' + regexpEscape(item) + ')'
     })
     core.info('RegExp used for upload filter: ' + regex.toString());
 

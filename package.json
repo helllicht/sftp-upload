@@ -13,6 +13,7 @@
   "license": "NONE",
   "dependencies": {
     "@actions/core": "^1.2.5",
+    "lodash.escaperegexp": "^4.1.2",
     "ssh2-sftp-client": "^6.0.1"
   },
   "devDependencies": {
