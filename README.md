@@ -4,7 +4,7 @@
 
 ## Active versions
 + master
-+ v1
++ v0.1
 
 ## How to use this action
 If not already done, add following folder structure to the project (name of the yml-file is up to you).
