@@ -5,6 +5,7 @@ const createInfo = require('./createInfo');
 const prefixRepair = require('./prefixRepair');
 const suffixRepair = require('./suffixRepair');
 const isSecurePassword = require('./isSecurePassword');
+const buildFilter = require('./buildFilter');
 
 /**
  * @param input
@@ -30,15 +31,15 @@ async function run() {
         const port = core.getInput('port', isRequired);
         const username = core.getInput('username', isRequired);
         const password = core.getInput('password', isRequired);
+        const rawLocalDir = core.getInput('localDir', isRequired);
+        const rawUploadPath = core.getInput('uploadPath', isRequired);
+        const exclude = JSON.parse(core.getInput('exclude', isRequired));
 
         // check that password is secure (or throw error!)
         isSecurePassword(password);
 
-        let localDirRaw = core.getInput('localDir', isRequired);
-        let uploadPathRaw = core.getInput('uploadPath', isRequired);
-
-        const localDir = prefixRepair(suffixRepair(localDirRaw));
-        const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
+        const localDir = prefixRepair(suffixRepair(rawLocalDir));
+        const uploadPath = prefixRepair(suffixRepair(rawUploadPath));
 
         const config = {
             host: host,
@@ -65,15 +66,24 @@ async function run() {
                 core.info(`Remote base directory is ${base}`);
             })
             .then(async () => {
+                // create an info.json file
                 await createInfo(localDir);
 
+                // pre-check if an old upload folder exists
                 if (await sftp.exists(uploadPath + 'upload')) {
                     core.info('An old "upload" folder was found! The script tries to remove it!');
                     await sftp.rmdir(uploadPath + 'upload', true);
                 }
 
-                core.info('Start upload.');
-                await sftp.uploadDir(localDir, uploadPath + 'upload');
+                // build filter
+                const filter = buildFilter(exclude);
+
+                // upload the directory
+                core.info('UPLOAD - START');
+                const startUpload = Math.floor(new Date().getTime() / 1000);
+                await sftp.uploadDir(localDir, uploadPath + 'upload', filter);
+                const doneUpload = Math.floor(new Date().getTime() / 1000);
+                core.info('UPLOAD - DONE -> took ' + (doneUpload - startUpload) + ' seconds!');
 
                 // if NOT exist create folder
                 if (!await sftp.exists(uploadPath + 'active')) {
@@ -89,10 +99,10 @@ async function run() {
 
                 const start = Math.floor(new Date().getTime() / 1000);
                 core.info('Rename directory "active" => "backup"');
-                await sftp.rename('active', 'backup');
+                await sftp.rename(uploadPath + 'active', uploadPath + 'backup');
 
                 core.info('Rename directory "upload" => "active"');
-                await sftp.rename('upload', 'active');
+                await sftp.rename(uploadPath + 'upload', uploadPath + 'active');
                 const done = Math.floor(new Date().getTime() / 1000);
 
                 core.info('DONE - Folder swap took ' + (done - start) + ' seconds!');

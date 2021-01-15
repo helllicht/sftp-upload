@@ -49,7 +49,9 @@ jobs:
                   password: ${{ secrets.SFTP_PASS }}
                   localDir: 'dist'
 ```
-
+Add the variable SFTP_PASS to the repository in github.
+-> https://github.com/your_name/the_repository/settings/secrets/actions
+Do not ever commit the password to the repository! It will be visible in the action logs!
 
 ## Update an active version 
 Breaking changes are not allowed when updating an active version!

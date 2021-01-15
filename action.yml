@@ -16,12 +16,16 @@ inputs:
         description: 'Password'
         required: true
     localDir:
-        description: 'Directory that should be uploaded (e.g. "dist", "./app", "./compiled/")'
+        description: 'Directory that should be uploaded (e.g. ".", "dist", "./app", "./compiled/")'
         required: true
     uploadPath:
         description: 'Path where the working directories are [default: "./"] (e.g. "app", "./www/", "www/prod", "html/var/"'
         required: false
         default: './'
+    exclude:
+        description: 'Files/Folders that should not be uploaded [default: ["node_modules", ".github"]] (it is using regex, so use it wisely!)'
+        required: false
+        default: '["node_modules", ".github"]'
     debugMode:
         description: 'Enable debug ("on"/"off") to receive a detailed log of the upload [default: "off"]'
         required: false
