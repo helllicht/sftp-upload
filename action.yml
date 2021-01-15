@@ -23,9 +23,9 @@ inputs:
         required: false
         default: './'
     exclude:
-        description: 'Files/Folders that should not be uploaded [default: ["node_modules", ".github"]] (it is using regex, so use it wisely!)'
+        description: 'Files/Folders that should not be uploaded [default: see action.yml] (it is using regex, so use it wisely!)'
         required: false
-        default: '["node_modules", ".github"]'
+        default: '[".github", ".git", ".gitignore", "composer.phar", "node_modules", "README.md", "package.json", "package-lock.json", "yarn.lock"]'
     debugMode:
         description: 'Enable debug ("on"/"off") to receive a detailed log of the upload [default: "off"]'
         required: false
