@@ -23,7 +23,7 @@ inputs:
         required: false
         default: './'
     exclude:
-        description: 'Files/Folders that should not be uploaded [default: see action.yml] (it is using regex, so use it wisely!)'
+        description: 'Files/Folders that should not be uploaded [default: see action.yml] (it is using regex) (pass "[]" for no filtering)'
         required: false
         default: '[".github", ".git", ".gitignore", "composer.phar", "node_modules", "README.md", "package.json", "package-lock.json", "yarn.lock"]'
     debugMode:
