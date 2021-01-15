@@ -2,6 +2,68 @@ require('./sourcemap-register.js');module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 1115:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+const core = __webpack_require__(2186);
+const regexpEscape = __webpack_require__(7676)
+
+/**
+ * @param {string[]} exclude
+ * @return {RegExp}
+ */
+let buildFilter = function (exclude) {
+    if (exclude.length === 0) {
+        core.info('exclude.length is zero, no upload filter is applied!');
+        return new RegExp('.*');
+    }
+
+    let regex = '';
+    exclude.forEach((item) => {
+        if (typeof item !== 'string') {
+            core.setFailed('Wrong exclude format!');
+            throw new Error('Error from buildFilter.js - Wrong exclude format!');
+        }
+
+        regex = regex + '^(?!' + regexpEscape(item) + ')'
+    })
+    core.info('RegExp used for upload filter: ' + regex.toString());
+
+    return new RegExp(regex);
+};
+
+module.exports = buildFilter;
+
+
+/***/ }),
+
+/***/ 5725:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+const core = __webpack_require__(2186);
+
+let checkNodeVersion = function () {
+    const NODE_MAJOR_VERSION = process.versions.node.split('.')[0];
+
+    // WARNING (see here https://www.npmjs.com/package/ssh2-sftp-client#sec-1 )
+    // There is currently a regression error with versions of node later than version 14.0.
+    // Apparently the change in core node which cause the issue with ssh2 has been rolled back in node version 15.3.0.
+    const SUPPORTED = ['12', '15']
+
+    if (SUPPORTED.includes(NODE_MAJOR_VERSION)) {
+        return;
+    }
+
+    core.setFailed('Not supported node.js version!');
+    const supported_format = SUPPORTED.toString().replaceAll(',', ', ');
+    throw new Error('Error from checkNodeVersion.js - Not supported node.js version! Supported versions: ' + supported_format);
+};
+
+module.exports = checkNodeVersion;
+
+
+/***/ }),
+
 /***/ 1123:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
@@ -47,10 +109,12 @@ module.exports = createInfo;
 
 const core = __webpack_require__(2186);
 const client = __webpack_require__(7551);
+const checkNodeVersion = __webpack_require__(5725);
 const createInfo = __webpack_require__(1123);
 const prefixRepair = __webpack_require__(4262);
 const suffixRepair = __webpack_require__(225);
 const isSecurePassword = __webpack_require__(7043);
+const buildFilter = __webpack_require__(1115);
 
 /**
  * @param input
@@ -67,21 +131,24 @@ function debugHelper(input) {
  */
 async function run() {
     try {
+        // node 14 is not supported due to a bug!
+        checkNodeVersion();
+
         const isRequired = { required: true };
 
         const host = core.getInput('host', isRequired);
         const port = core.getInput('port', isRequired);
         const username = core.getInput('username', isRequired);
         const password = core.getInput('password', isRequired);
+        const rawLocalDir = core.getInput('localDir', isRequired);
+        const rawUploadPath = core.getInput('uploadPath', isRequired);
+        const exclude = JSON.parse(core.getInput('exclude', isRequired));
 
         // check that password is secure (or throw error!)
         isSecurePassword(password);
 
-        let localDirRaw = core.getInput('localDir', isRequired);
-        let uploadPathRaw = core.getInput('uploadPath', isRequired);
-
-        const localDir = prefixRepair(suffixRepair(localDirRaw));
-        const uploadPath = prefixRepair(suffixRepair(uploadPathRaw));
+        const localDir = prefixRepair(suffixRepair(rawLocalDir));
+        const uploadPath = prefixRepair(suffixRepair(rawUploadPath));
 
         const config = {
             host: host,
@@ -108,15 +175,24 @@ async function run() {
                 core.info(`Remote base directory is ${base}`);
             })
             .then(async () => {
+                // create an info.json file
                 await createInfo(localDir);
 
+                // pre-check if an old upload folder exists
                 if (await sftp.exists(uploadPath + 'upload')) {
                     core.info('An old "upload" folder was found! The script tries to remove it!');
                     await sftp.rmdir(uploadPath + 'upload', true);
                 }
 
-                core.info('Start upload.');
-                await sftp.uploadDir(localDir, uploadPath + 'upload');
+                // build filter
+                const filter = buildFilter(exclude);
+
+                // upload the directory
+                core.info('UPLOAD - START');
+                const startUpload = Math.floor(new Date().getTime() / 1000);
+                await sftp.uploadDir(localDir, uploadPath + 'upload', filter);
+                const doneUpload = Math.floor(new Date().getTime() / 1000);
+                core.info('UPLOAD - DONE -> took ' + (doneUpload - startUpload) + ' seconds!');
 
                 // if NOT exist create folder
                 if (!await sftp.exists(uploadPath + 'active')) {
@@ -130,10 +206,15 @@ async function run() {
                     await sftp.rmdir(uploadPath + 'backup', true);
                 }
 
-                core.info('Rename directories "active" => "backup"');
-                await sftp.rename('active', 'backup');
-                core.info('Rename directories "upload" => "active"');
-                await sftp.rename('upload', 'active');
+                const start = Math.floor(new Date().getTime() / 1000);
+                core.info('Rename directory "active" => "backup"');
+                await sftp.rename(uploadPath + 'active', uploadPath + 'backup');
+
+                core.info('Rename directory "upload" => "active"');
+                await sftp.rename(uploadPath + 'upload', uploadPath + 'active');
+                const done = Math.floor(new Date().getTime() / 1000);
+
+                core.info('DONE - Folder swap took ' + (done - start) + ' seconds!');
             })
             .catch(err => {
                 core.setFailed(err.message);
@@ -2186,6 +2267,179 @@ if (typeof Object.create === 'function') {
     }
   }
 }
+
+
+/***/ }),
+
+/***/ 7676:
+/***/ ((module) => {
+
+/**
+ * lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0;
+
+/** `Object#toString` result references. */
+var symbolTag = '[object Symbol]';
+
+/**
+ * Used to match `RegExp`
+ * [syntax characters](http://ecma-international.org/ecma-262/6.0/#sec-patterns).
+ */
+var reRegExpChar = /[\\^$.*+?()[\]{}|]/g,
+    reHasRegExpChar = RegExp(reRegExpChar.source);
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/** Built-in value references. */
+var Symbol = root.Symbol;
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = Symbol ? Symbol.prototype : undefined,
+    symbolToString = symbolProto ? symbolProto.toString : undefined;
+
+/**
+ * The base implementation of `_.toString` which doesn't convert nullish
+ * values to empty strings.
+ *
+ * @private
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ */
+function baseToString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+  if (isSymbol(value)) {
+    return symbolToString ? symbolToString.call(value) : '';
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return typeof value == 'symbol' ||
+    (isObjectLike(value) && objectToString.call(value) == symbolTag);
+}
+
+/**
+ * Converts `value` to a string. An empty string is returned for `null`
+ * and `undefined` values. The sign of `-0` is preserved.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ * @example
+ *
+ * _.toString(null);
+ * // => ''
+ *
+ * _.toString(-0);
+ * // => '-0'
+ *
+ * _.toString([1, 2, 3]);
+ * // => '1,2,3'
+ */
+function toString(value) {
+  return value == null ? '' : baseToString(value);
+}
+
+/**
+ * Escapes the `RegExp` special characters "^", "$", "\", ".", "*", "+",
+ * "?", "(", ")", "[", "]", "{", "}", and "|" in `string`.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category String
+ * @param {string} [string=''] The string to escape.
+ * @returns {string} Returns the escaped string.
+ * @example
+ *
+ * _.escapeRegExp('[lodash](https://lodash.com/)');
+ * // => '\[lodash\]\(https://lodash\.com/\)'
+ */
+function escapeRegExp(string) {
+  string = toString(string);
+  return (string && reHasRegExpChar.test(string))
+    ? string.replace(reRegExpChar, '\\$&')
+    : string;
+}
+
+module.exports = escapeRegExp;
 
 
 /***/ }),
