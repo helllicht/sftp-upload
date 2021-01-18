@@ -71,8 +71,8 @@ async function run() {
 
                 // pre-check if an old upload folder exists
                 if (await sftp.exists(uploadPath + 'upload')) {
-                    core.info('An old "upload" folder was found! The script tries to remove it!');
-                    await sftp.rmdir(uploadPath + 'upload', true);
+                    core.setFailed('A "upload" folder was found! Is there a second deployment process in parallel? If this is an accident, please delete the "Upload" folder on the server manually. THE ACTION ABORTS ITSELF!');
+                    throw new Error('A "upload" folder was found!');
                 }
 
                 // build filter
